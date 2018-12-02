@@ -95,35 +95,16 @@ public class Day02 extends PuzzleDay {
   @Override
   public void solvePart2() {
     List<String> inputLines = getInput();
-    List<Map<Character, List<Integer>>> data = new ArrayList<>();
+    List<Map<Character, List<Integer>>> data = initIndexData();
 
     //set up our data - create groups of row indexes that share the same letter per column
     //IE: data[columnIndex][character] = [row Index, row index, ...]
     for (int i = 0; i < inputLines.size(); i++) {
-
       char[] chars = inputLines.get(i).toCharArray();
-      for (int j = 0; j < chars.length; j++) {
-
-        Map<Character, List<Integer>> characterMap;
-        if (data.size() - 1 < j) {
-          characterMap = new HashMap<>();
-          data.add(characterMap);
-        } else {
-          characterMap = data.get(j);
-        }
-
-        char c = chars[j];
-        List<Integer> codes;
-        if (characterMap.containsKey(c)) {
-          codes = characterMap.get(c);
-        } else {
-          codes = new ArrayList<>();
-          characterMap.put(c, codes);
-        }
-        codes.add(i);
+      for (int column = 0; column < chars.length; column++) {
+        data.get(column).get(chars[column]).add(i);
       }
     }
-
 
     //loop through each code and use our data to see if there are any other rows that have the same
     // values for all columns except for one.
@@ -144,5 +125,21 @@ public class Day02 extends PuzzleDay {
     }
   }
 
-  
+  /**
+   * init our data structure to index our codes.  We are going to assume
+   * all codes are the same fixed length with only a-z chars
+   * @return
+   */
+  private  List<Map<Character, List<Integer>>> initIndexData(){
+    List<Map<Character, List<Integer>>> data = new ArrayList<>();
+    char[] chars = "abcdefghijklmnopqrstuvwxyz".toCharArray();
+    for (int i = 0; i < 26; i++){
+      Map<Character, List<Integer>> characterMap = new HashMap<>();
+      data.add(characterMap);
+      for(char c : chars){
+        characterMap.put(c, new ArrayList<>());
+      }
+    }
+    return data;
+  }
 }
