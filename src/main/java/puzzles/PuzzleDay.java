@@ -5,6 +5,9 @@ import utils.InputParser;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public abstract class PuzzleDay {
 
@@ -28,6 +31,11 @@ public abstract class PuzzleDay {
     } catch (IOException e) {
       return new LinkedList<>(); // not really useful.
     }
+  }
+
+  protected List<Matcher> getRegexInput(String patternStr){
+    Pattern pattern = Pattern.compile(patternStr);
+    return getInput().stream().map(pattern::matcher).collect(Collectors.toList());
   }
 
   protected void print(Object obj){
