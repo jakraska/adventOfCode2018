@@ -3,6 +3,7 @@ package puzzles;
 import utils.InputParser;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -40,5 +41,14 @@ public abstract class PuzzleDay {
 
   protected void print(Object obj){
     System.out.println(obj);
+  }
+  
+  protected List<Integer> getIntegerList(int size, int initialValue){
+      List<Integer> list = new ArrayList<>();
+      for(int i = 0; i < size; i++){
+        list.add(initialValue);
+      }
+      return list;
+    
   }
 }

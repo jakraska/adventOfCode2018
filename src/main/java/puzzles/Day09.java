@@ -2,7 +2,12 @@ package puzzles;
 
 import org.apache.commons.lang3.StringUtils;
 
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.regex.Matcher;
 
 public class Day09 extends PuzzleDay {
 
@@ -79,31 +84,36 @@ public class Day09 extends PuzzleDay {
    */
   @Override
   public void solvePart1() {
+    
     Game game = new Game();
-    int[] players = new int[10];
-    int maxMarbleValue = 1618;
-    int lastScore = 0;
-    int marbleIndex = 1;
-
-    System.out.print("[-] "+ game.print() + "\n");
-    while(lastScore != maxMarbleValue){
-
-      for(int i = 0; i < players.length && lastScore != maxMarbleValue; i++){
-
-        lastScore = game.addMarble(marbleIndex);
-//        System.out.print("["+(i + 1)+"] ");
-//        System.out.print(game.print()+ ": " + lastScore + "\n");
-        if(marbleIndex %23 == 0 || marbleIndex %22 == 0){
-//          print(marbleIndex + ": " + lastScore);
-          if(marbleIndex %22 == 0)print("----------");
-          System.out.print("["+(i + 1)+"] ");
-        System.out.print(game.print()+ ": " + lastScore + "\n");
-        }
-        marbleIndex++;
-        players[i]+= lastScore;
-      }
+    List<Integer> players = getIntegerList(getInputPlayers(), 0);
+    int maxMarbleValue = getInputLastMarble();
+    int currPlayer = 0;
+    
+    
+    for(int marbleIndex = 1; marbleIndex <= maxMarbleValue; marbleIndex++){
+      int score = game.addMarble(marbleIndex);
+      players.set(currPlayer, players.get(currPlayer) + score);
+      currPlayer = (currPlayer +1) % players.size();
     }
+    
+    print(Collections.max(players));
+    
+    
     return;
+  }
+  
+  public Integer getInputPlayers(){
+    Matcher matcher = getRegexInput("(\\d*) players; last marble is worth (\\d*) points")
+            .get(0);
+    matcher.find();
+    return Integer.parseInt(matcher.group(1));
+  }
+  public Integer getInputLastMarble(){
+    Matcher matcher = getRegexInput("(\\d*) players; last marble is worth (\\d*) points")
+            .get(0);
+    matcher.find();
+    return Integer.parseInt(matcher.group(2));
   }
 
   public class Game{
@@ -169,8 +179,39 @@ public class Day09 extends PuzzleDay {
 
   }
 
+  /**
+   * --- Part Two ---
+   * Amused by the speed of your answer, the Elves are curious:
+   *
+   * What would the new winning Elf's score be if the number of the last marble were 100 times 
+   * larger?
+   */
   @Override
   public void solvePart2() {
+    Game game = new Game();
+    List<BigInteger> players = new ArrayList<>();
+    for(int i = 0; i < getInputPlayers(); i++){
+      players.add(BigInteger.valueOf(0));
+    }
+    int maxMarbleValue = getInputLastMarble() * 100;
+    int currPlayer = 0;
 
+    for(int marbleIndex = 1; marbleIndex <= maxMarbleValue; marbleIndex++){
+      int score = game.addMarble(marbleIndex);
+      if(score != 0) {
+        players.set(currPlayer, players.get(currPlayer).add(BigInteger.valueOf(score)));
+        
+      }
+      currPlayer = (currPlayer + 1) % players.size();
+
+    }
+    
+    BigInteger max = players.get(0);
+    for(BigInteger score : players){
+      max = score.max(max);
+    }
+    print(max);
+
+    return;
   }
 }
