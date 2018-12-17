@@ -3,10 +3,7 @@ package puzzles;
 import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Matcher;
 
 public class Day09 extends PuzzleDay {
@@ -90,16 +87,14 @@ public class Day09 extends PuzzleDay {
     int maxMarbleValue = getInputLastMarble();
     int currPlayer = 0;
     
-    
     for(int marbleIndex = 1; marbleIndex <= maxMarbleValue; marbleIndex++){
+
       int score = game.addMarble(marbleIndex);
       players.set(currPlayer, players.get(currPlayer) + score);
       currPlayer = (currPlayer +1) % players.size();
     }
     
     print(Collections.max(players));
-    
-    
     return;
   }
   
@@ -118,59 +113,70 @@ public class Day09 extends PuzzleDay {
 
   public class Game{
     LinkedList<Integer> circle = new LinkedList<>();
-    Integer currentMarbleIndex;
+    ListIterator<Integer> listIterator;
+    
 
     public Game() {
       circle.add(0);
-      currentMarbleIndex = 0;
+      listIterator = circle.listIterator(0);
+    }
+    
+    public int currentIndex(){
+      return listIterator.nextIndex() - 1;
     }
 
     public Integer addMarble(int marbleId){
 
       if(marbleId % 23 == 0){
         Integer score = marbleId;
-        int removeIndex = normalizeIndex(currentMarbleIndex - 7);
-//        if(removeIndex < 0){
-//          removeIndex = (circle.size()) + removeIndex;
-//        }
-        int removedVal = circle.remove(removeIndex);
+        safePrevious();
+        safePrevious();
+        safePrevious();
+        safePrevious();
+        safePrevious();
+        safePrevious();
+        safePrevious();
+        
+        //take another one away due to the the linked list nodes work
+        int removedVal = safePrevious();
         score += removedVal;
-//        currentMarbleIndex = (removeIndex >= circle.size())? 0 : removeIndex;
-        currentMarbleIndex = normalizeIndex(removeIndex);
-
+        listIterator.remove();
+        safeNext();
+        
         return score;
       }else {
-
-
-        Integer nextIndex = currentMarbleIndex + 2;
-        if (nextIndex > circle.size()) {
-          nextIndex = normalizeIndex(nextIndex);
-        }
-        currentMarbleIndex = nextIndex;
-//        currentMarbleIndex = normalizeIndex(currentMarbleIndex+2);
-        circle.add(currentMarbleIndex, marbleId);
+          safeNext();
+          listIterator.add(marbleId);
         return 0;
       }
     }
-
-    public int normalizeIndex(int index){
-      if(index < 0){
-        return circle.size() + index;
-      }else if(index >= circle.size()){
-        return index - circle.size();
+    
+    public Integer safeNext(){
+      if(!listIterator.hasNext()){
+        listIterator = circle.listIterator(0);
       }
-      return index;
+      return listIterator.next();
     }
+    public Integer safePrevious(){
+      if(!listIterator.hasPrevious()){
+        listIterator = circle.listIterator(circle.size() -1);
+        listIterator.next();
+      }
+      return listIterator.previous();
+    }
+
+
 
     public String print(){
       StringBuilder sb = new StringBuilder();
+      int currIndex = currentIndex();
       for(int i = 0; i < circle.size(); i++){
-        if(i == currentMarbleIndex){
+        if(i == currIndex){
 
         }
-        sb.append((i == currentMarbleIndex)? "(" : " ");
+        sb.append((i == currIndex)? "(" : " ");
         sb.append(circle.get(i));
-        sb.append((i == currentMarbleIndex)? ")" : " ");
+        sb.append((i == currIndex)? ")" : " ");
 
       }
       return sb.toString();
