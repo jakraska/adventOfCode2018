@@ -338,20 +338,32 @@ public class Day15 extends PuzzleDay {
   @Override
   public void solvePart1() {
     Game game = new Game(getInput());
-    print(game.navMesh);
+    int i = 0;
+    print(game);
+
+    while (game.processRound()){
+      print(game);
+      
+    }
+    print(game.round * game.remainingHealth());
+    
+//    print(game.navMesh);
 
 //    List<NavPath> paths = game.navMesh.getShortestPaths(new Vector2(7, 11), new Vector2(9, 
 //            9), game.units);
 //    game.navMesh.fillUnits(game.units);
 //    game.navMesh.fillCosts(new Vector2(8, 11), new Vector2(16, 11) );
 
-    print(game.navMesh);
+//    print(game.navMesh);
     
 //    for(NavPath path : paths){
 //      print("---------");
 //      print(path);
 //    }
 
+    print("Rounds: " + game.round);
+    print("Health: " + game.remainingHealth());
+    print("Outcome: " + (game.round * game.remainingHealth()));
     return;
   }
 
@@ -411,6 +423,7 @@ public class Day15 extends PuzzleDay {
     @Override
     public String toString() {
       StringBuilder stringBuilder = new StringBuilder();
+      stringBuilder.append("Round " + round + ":\n");
       for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
           GameObject gameObject = board.get(x).get(y);
@@ -420,6 +433,10 @@ public class Day15 extends PuzzleDay {
       }
       return stringBuilder.toString();
     }
+    
+    public int remainingHealth(){
+      return units.stream().filter(unit -> unit.alive).mapToInt(unit -> unit.health).sum();
+    }
 
     public boolean processRound() {
       
@@ -427,7 +444,13 @@ public class Day15 extends PuzzleDay {
         if(!unit.alive){
           continue;
         }
+        List<Unit> enemies = getEnemies(unit);
+        //check if we are done
+        if(enemies.isEmpty()){
+          return false; //end game
+        }
         
+        //see if we have something in range already
         Unit attackTarget = unit.getAttackUnitInRange(this);
         if(attackTarget != null){
           if(!attackTarget.takeDamage(unit.attackPower)){
@@ -436,17 +459,49 @@ public class Day15 extends PuzzleDay {
           continue;
         }
         
+        //move to target if we can
+        Unit nearestEnemy = enemies.stream()
+                .min(Comparator.comparing(eu -> navMesh.getDistance(unit.pos, eu.pos, units), 
+                        Comparator.nullsLast(Comparator.naturalOrder())))
+                .orElse(null);
+        
+
+        if(nearestEnemy != null){
+          Vector2 moveTo =  navMesh.getNextMove(unit.pos, nearestEnemy.pos, units);
+          if(moveTo != null) {
+            moveUnit(unit, moveTo);
+          }
+        }
+
+        //attack target if now in range
+         attackTarget = unit.getAttackUnitInRange(this);
+        if(attackTarget != null){
+          if(!attackTarget.takeDamage(unit.attackPower)){
+            removeUnit(attackTarget);
+          }
+          
+        }
         
         
         
       }
+      round++;
 
-      return false;
+      return true;
     }
 
+    public List<Unit> getEnemies(Unit unit){
+      return units.stream().filter(u -> unit.isEnemy(u)).collect(Collectors.toList());
+    }
+    
     public void removeUnit(Unit unit){
       units.remove(unit);
       board.get(unit.pos.x).set(unit.pos.y, null);
+    }
+    public void moveUnit(Unit unit, Vector2 newPosition){
+      board.get(unit.pos.x).set(unit.pos.y, null);
+      unit.pos = newPosition;
+      board.get(newPosition.x).set(newPosition.y, unit);
     }
 
     public List<Unit> getUnitQueue() {
@@ -483,7 +538,7 @@ public class Day15 extends PuzzleDay {
     }
   }
   public class Unit extends GameObject{
-    public int health = 100;
+    public int health = 200;
     public int attackPower = 3;
     public Team team;
     public boolean alive = true;
@@ -491,6 +546,13 @@ public class Day15 extends PuzzleDay {
     public Unit(Vector2 pos, Team team) {
       this.pos = pos;
       this.team = team;
+    }
+    
+    public int attackWeight(int boardWidth, int boardHeight){
+      int weight = health + (boardWidth * boardHeight);
+      weight+= pos.y * boardWidth;
+      weight+= pos.x;
+      return weight;
     }
 
     @Override
@@ -511,7 +573,8 @@ public class Day15 extends PuzzleDay {
       return (Unit)gameObjects.stream()
               .filter(gameObject -> gameObject != null && gameObject.getClass() ==
                       Unit.class && isEnemy((Unit) gameObject) && ((Unit) gameObject).alive)
-                      .min(Comparator.comparing(gameObject -> ((Unit) gameObject).health))
+                      .min(Comparator.comparing(gameObject -> ((Unit) gameObject).attackWeight
+                              (game.width, game.height)))
                       .orElse(null);
       
     }
@@ -607,9 +670,17 @@ public class Day15 extends PuzzleDay {
         }
       }
       
-      //TODO: handle priority. for now just return the first option
-      return moveOptions.get(0);
+      return moveOptions.stream().min(Comparator.comparing(pos -> (pos.y * height) + pos.x))
+              .orElse(null);
       
+    }
+    
+    private Integer getDistance(Vector2 start, Vector2 end, List<Unit> units){
+      reset();
+      fillUnits(units);
+      fillCosts(start, end);
+      NavNode endNode = grid.get(end.x).get(end.y);
+      return endNode == null ? null : endNode.cost;
     }
     
     private List<NavPath> getShortestPaths(Vector2 start, Vector2 end, List<Unit> units){
@@ -673,10 +744,10 @@ public class Day15 extends PuzzleDay {
       }
       node.cost = cost;
       
-//      if(isEnd){
-//        return; //we are at the end
-//      }
-//      
+      if(isEnd){
+        return; //we are at the end
+      }
+
       //update our path to include this node
       Set<NavNode> newPath = new HashSet<>(pathNodes);
       newPath.add(node);
